@@ -9,6 +9,6 @@ Build:
 cd ATP-admin-ui
 podman build -t atp-admin .
 
-podman run -d --name atp-admin -p 8000:8000 --env-file .env -v /your/host/fs/path:/data:Z atp-admin:latest
+podman run -d --name atp-admin -p 8001:8001 --env-file .env -v /your/host/fs/path:/data:Z atp-admin:latest
 ```
 
