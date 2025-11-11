@@ -7,7 +7,11 @@ from django.db.models.fields import CharField, TextField, IntegerField, BigInteg
 from .models import Video
 from .forms import VideoForm
 from .mappings import DB_FIELDS
+from django.http import HttpResponse
+from django.urls import path  # Not needed here, but ok
 
+def test_view(request):
+    return HttpResponse("Test page loaded! URLs working.")
 
 def get_fs_path(video, ext='mp4'):
     base_url = os.getenv('BASE_SITE_URL', 'https://www.kjv1611only.com/')
