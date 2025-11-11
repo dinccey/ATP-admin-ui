@@ -2,6 +2,7 @@
 import os
 import json
 from datetime import datetime
+from django.urls import reverse
 from django.views.generic import ListView, UpdateView
 from django.shortcuts import get_object_or_404
 from django.db.models.fields import CharField, TextField, IntegerField, BigIntegerField
@@ -57,6 +58,9 @@ class VideoUpdateView(UpdateView):
     form_class = VideoForm
     template_name = 'videos/edit.html'
     pk_url_kwarg = 'pk'
+
+    def get_success_url(self):
+        return reverse('video_list')
 
     def form_valid(self, form):
         instance = form.save(commit=False)
