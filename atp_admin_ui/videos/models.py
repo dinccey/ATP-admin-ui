@@ -1,3 +1,4 @@
+# videos/models.py
 from django.db import models
 
 class Video(models.Model):
@@ -8,12 +9,12 @@ class Video(models.Model):
     name = models.CharField(max_length=255)
     vid_title = models.CharField(max_length=255)
     vid_code = models.TextField()
-    date = models.DateTimeField()
+    date = models.CharField(max_length=19)  # Changed from DateTimeField to handle string values from DB
     vid_url = models.CharField(max_length=512)
     video_id = models.CharField(max_length=50)
     main_category = models.CharField(max_length=255)
     profile_id = models.IntegerField(null=True, blank=True)
-    created_at = models.DateTimeField()
+    created_at = models.CharField(max_length=19)  # Changed from DateTimeField to handle string values from DB
     clicks = models.IntegerField(default=0)
     shorts = models.IntegerField(default=0)
     language = models.CharField(max_length=10)

@@ -1,17 +1,13 @@
+# videos/views.py
 import os
 import json
 from datetime import datetime
 from django.views.generic import ListView, UpdateView
 from django.shortcuts import get_object_or_404
-from django.db.models.fields import CharField, TextField, IntegerField, BigIntegerField, DateTimeField
+from django.db.models.fields import CharField, TextField, IntegerField, BigIntegerField
 from .models import Video
 from .forms import VideoForm
 from .mappings import DB_FIELDS
-from django.http import HttpResponse
-from django.urls import path  # Not needed here, but ok
-
-def test_view(request):
-    return HttpResponse("Test page loaded! URLs working.")
 
 def get_fs_path(video, ext='mp4'):
     base_url = os.getenv('BASE_SITE_URL', 'https://www.kjv1611only.com/')
@@ -24,7 +20,6 @@ def get_fs_path(video, ext='mp4'):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
     return full_path
-
 
 class VideoListView(ListView):
     model = Video
@@ -43,9 +38,6 @@ class VideoListView(ListView):
                     filter_kwargs = {f'{field}__icontains': q}
                 elif isinstance(model_field, (IntegerField, BigIntegerField)):
                     filter_kwargs = {field: int(q)}
-                elif isinstance(model_field, DateTimeField):
-                    dt = datetime.strptime(q, '%Y-%m-%d %H:%M:%S')
-                    filter_kwargs = {field: dt}
                 else:
                     return queryset
                 queryset = queryset.filter(**filter_kwargs)
@@ -59,7 +51,6 @@ class VideoListView(ListView):
         context['selected_field'] = self.request.GET.get('field', 'video_id')
         context['q'] = self.request.GET.get('q', '')
         return context
-
 
 class VideoUpdateView(UpdateView):
     model = Video
@@ -128,6 +119,11 @@ class VideoUpdateView(UpdateView):
         else:
             rel_path = instance.vid_url.replace(os.getenv('BASE_SITE_URL', 'https://www.kjv1611only.com/'), '')
             target_filename = os.path.basename(instance.vid_url)
+            try:
+                dt = datetime.strptime(instance.date, '%Y-%m-%d %H:%M:%S') if instance.date else None
+                us_mdY = dt.strftime('%m/%d/%Y') if dt else None
+            except ValueError:
+                us_mdY = None
             data = {
                 "original_filename": target_filename,
                 "target_filename": target_filename,
@@ -137,7 +133,7 @@ class VideoUpdateView(UpdateView):
                 "target_vtt_filename": target_filename.rsplit('.mp4', 1)[0] + '.vtt',
                 "sql_params": {f: getattr(instance, f) for f in DB_FIELDS},
                 "title": instance.name,
-                "us_mdY": instance.date.strftime('%m/%d/%Y') if instance.date else None,
+                "us_mdY": us_mdY,
                 "error": None
             }
             with open(json_path, 'w') as f:
