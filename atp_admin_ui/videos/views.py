@@ -2,10 +2,12 @@
 import os
 import json
 from datetime import datetime
-from django.urls import reverse
-from django.views.generic import ListView, UpdateView
-from django.shortcuts import get_object_or_404
+from django.urls import reverse, reverse_lazy
+from django.views.generic import ListView, UpdateView, DeleteView
+from django.shortcuts import get_object_or_404, redirect
 from django.db.models.fields import CharField, TextField, IntegerField, BigIntegerField
+from django.db.models import Count
+from collections import defaultdict
 from .models import Video
 from .forms import VideoForm
 from .mappings import DB_FIELDS
@@ -51,6 +53,20 @@ class VideoListView(ListView):
         context['fields'] = DB_FIELDS
         context['selected_field'] = self.request.GET.get('field', 'video_id')
         context['q'] = self.request.GET.get('q', '')
+
+        if self.request.GET.get('duplicates'):
+            # Find duplicates based on video_id, group by video_id, sort groups by newest created_at in each
+            duplicates_qs = Video.objects.values('video_id').annotate(count=Count('video_id')).filter(count__gt=1)
+            duplicate_ids = [d['video_id'] for d in duplicates_qs]
+            duplicates = Video.objects.filter(video_id__in=duplicate_ids).order_by('video_id', '-created_at')
+            grouped_duplicates = defaultdict(list)
+            for video in duplicates:
+                grouped_duplicates[video.video_id].append(video)
+            context['grouped_duplicates'] = dict(grouped_duplicates)
+            context['show_duplicates'] = True
+        else:
+            context['show_duplicates'] = False
+
         return context
 
 class VideoUpdateView(UpdateView):
@@ -58,6 +74,41 @@ class VideoUpdateView(UpdateView):
     form_class = VideoForm
     template_name = 'videos/edit.html'
     pk_url_kwarg = 'pk'
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if 'delete_video' in request.POST:
+            return self.delete_file('mp4')
+        elif 'delete_audio' in request.POST:
+            return self.delete_file('mp3')
+        elif 'delete_vtt' in request.POST:
+            return self.delete_file('vtt')
+        elif 'delete_thumb' in request.POST:
+            return self.delete_file('jpg')
+        elif 'delete_json' in request.POST:
+            return self.delete_file('json')
+        elif 'delete_all' in request.POST:
+            return self.delete_all()
+        else:
+            return super().post(request, *args, **kwargs)
+
+    def delete_file(self, ext):
+        path = get_fs_path(self.object, ext)
+        if os.path.exists(path):
+            os.remove(path)
+        if ext == 'jpg':
+            self.object.thumb_url = None
+            self.object.save()
+        return redirect(self.get_success_url())
+
+    def delete_all(self):
+        extensions = ['mp4', 'mp3', 'vtt', 'jpg', 'json']
+        for ext in extensions:
+            path = get_fs_path(self.object, ext)
+            if os.path.exists(path):
+                os.remove(path)
+        self.object.delete()
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse('video_list')
