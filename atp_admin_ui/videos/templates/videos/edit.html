@@ -12,6 +12,17 @@
         {{ form.as_p }}
         <button type="submit">Save</button>
     </form>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="delete_video">Delete Video File</button>
+        <button type="submit" name="delete_audio">Delete Audio File</button>
+        <button type="submit" name="delete_vtt">Delete VTT File</button>
+        <button type="submit" name="delete_thumb">Delete Thumbnail</button>
+        <button type="submit" name="delete_json">Delete JSON File</button>
+        <button type="submit" name="delete_all"
+            onclick="return confirm('Are you sure you want to delete all files for this video?');">Delete All
+            Files</button>
+    </form>
     <a href="{% url 'video_list' %}">Back to List</a>
 </body>
 
