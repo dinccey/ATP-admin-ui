@@ -89,6 +89,8 @@ class VideoUpdateView(UpdateView):
             return self.delete_file('json')
         elif 'delete_all' in request.POST:
             return self.delete_all()
+        elif 'delete_db_only' in request.POST:
+            return self.delete_db_only()
         else:
             return super().post(request, *args, **kwargs)
 
@@ -107,6 +109,10 @@ class VideoUpdateView(UpdateView):
             path = get_fs_path(self.object, ext)
             if os.path.exists(path):
                 os.remove(path)
+        self.object.delete()
+        return redirect(self.get_success_url())
+
+    def delete_db_only(self):
         self.object.delete()
         return redirect(self.get_success_url())
 
