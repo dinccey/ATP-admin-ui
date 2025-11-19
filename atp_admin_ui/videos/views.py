@@ -176,18 +176,29 @@ class VideoUpdateView(UpdateView):
                 video_file = self.request.FILES['video_file']
                 video_path = get_fs_path(instance, 'mp4')
                 messages.info(self.request, f"Replacing video file at: {video_path}")
-                with open(video_path, 'wb+') as destination:
-                    for chunk in video_file.chunks():
-                        destination.write(chunk)
-                messages.success(self.request, f"Video file replaced successfully at: {video_path}")
+                try:
+                    with open(video_path, 'wb') as destination:  # ← 'wb' instead of 'wb+'
+                            for chunk in video_file.chunks():
+                                destination.write(chunk)
+                    messages.success(self.request, f"Video file successfully replaced at: {video_path}")
+                except Exception as e:
+                    messages.error(self.request, f"Failed to write video file: {str(e)}")
+            
             if 'audio_file' in self.request.FILES:
                 audio_file = self.request.FILES['audio_file']
                 audio_path = get_fs_path(instance, 'mp3')
-                messages.info(self.request, f"Replacing audio file at: {audio_path}")
-                with open(audio_path, 'wb+') as destination:
-                    for chunk in audio_file.chunks():
-                        destination.write(chunk)
-                messages.success(self.request, f"Audio file replaced successfully at: {audio_path}")
+                messages.info(self.request, f"Replacing audio file → {audio_path}")
+                try:
+                    with open(audio_path, 'wb') as f:  # ← 'wb' instead of 'wb+' → truncates old file
+                        for chunk in audio_file.chunks():
+                            f.write(chunk)
+                    messages.success(
+                        self.request,
+                        f"✓ Audio file successfully replaced at: {audio_path} "
+                        f"({audio_file.size} bytes written)"
+                    )
+                except Exception as e:
+                    messages.error(self.request, f"✗ Failed to replace audio file: {str(e)}")
             elif form.cleaned_data['audio_delete']:
                 audio_path = get_fs_path(instance, 'mp3')
                 messages.info(self.request, f"Deleting audio file at: {audio_path}")
